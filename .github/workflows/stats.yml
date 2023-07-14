@@ -19,24 +19,40 @@ jobs:
 
           commit_count=$(git log --since="$start_date" --until="$end_date" --oneline --pretty=format:'%h' | wc -l)
 
-          owner=$(echo "${{ github.repository }}" | cut -d '/' -f 1)
-          repo=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
-
           open_issues=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/search/issues?q=is:issue+is:open+created:$start_date..$end_date+repo:$owner/$repo&per_page=1")
+            "https://api.github.com/search/issues?q=is:issue+is:open+created:$start_date..$end_date+repo:{{ github.repository }}&per_page=1")
           open_issue_count=$(echo "$open_issues" | jq '.total_count')
 
           closed_issues=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/search/issues?q=is:issue+is:closed+closed:$start_date..$end_date+repo:$owner/$repo&per_page=1")
+            "https://api.github.com/search/issues?q=is:issue+is:closed+closed:$start_date..$end_date+repo:{{ github.repository }}&per_page=1")
           closed_issue_count=$(echo "$closed_issues" | jq '.total_count')
 
           open_prs=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/search/issues?q=is:pr+is:open+created:$start_date..$end_date+repo:$owner/$repo&per_page=1")
+            "https://api.github.com/search/issues?q=is:pr+is:open+created:$start_date..$end_date+repo:{{ github.repository }}&per_page=1")
           open_pr_count=$(echo "$open_prs" | jq '.total_count')
 
           closed_prs=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/search/issues?q=is:pr+is:closed+closed:$start_date..$end_date+repo:$owner/$repo&per_page=1")
+            "https://api.github.com/search/issues?q=is:pr+is:closed+closed:$start_date..$end_date+repo:{{ github.repository }}&per_page=1")
           closed_pr_count=$(echo "$closed_prs" | jq '.total_count')
+
+          # 新增代码行数
+          added_lines=$(git diff --shortstat $(git rev-list -n 1 --before="$start_date" HEAD) HEAD | awk '{print $4}')
+          added_lines=${added_lines//insertion(+)/}
+
+          # 修改代码行数
+          modified_lines=$(git diff --shortstat $(git rev-list -n 1 --before="$start_date" HEAD) HEAD | awk '{print $6}')
+          modified_lines=${modified_lines//deletion(-)/}
+
+          # 活跃贡献者数量
+          active_contributors=$(git log --since="$start_date" --until="$end_date" --format='%ae' | sort -u | wc -l)
+
+          # 平均解决问题时间
+          avg_issue_resolve_time=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/{{ github.repository }}/issues?state=closed&since=$start_date&until=$end_date&per_page=100" | jq '[.[] | (.closed_at - .created_at)] | add / length')
+
+          # 平均合并 PR 时间
+          avg_pr_merge_time=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/{{ github.repository }}/pulls?state=closed&since=$start_date&until=$end_date&per_page=100" | jq '[.[] | (.merged_at - .created_at)] | add / length')
 
           echo "Last week's stats:"
           echo "Commits: $commit_count"
@@ -44,3 +60,8 @@ jobs:
           echo "Closed Issues: $closed_issue_count"
           echo "Opened PRs: $open_pr_count"
           echo "Closed PRs: $closed_pr_count"
+          echo "Added Lines: $added_lines"
+          echo "Modified Lines: $modified_lines"
+          echo "Active Contributors: $active_contributors"
+          echo "Average Issue Resolve Time: $avg_issue_resolve_time"
+          echo "Average PR Merge Time: $avg_pr_merge_time"
