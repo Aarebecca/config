@@ -59,4 +59,35 @@ jobs:
           echo "Modified Lines: $modified_lines"
           echo "Active Contributors: $active_contributors"
 
-          
+          # 生成 Markdown 表格
+          markdown_table="| Metric | Value |\n|---|---|\n"
+          markdown_table+="| Commits | $commit_count |\n"
+          markdown_table+="| Opened Issues | $open_issue_count |\n"
+          markdown_table+="| Closed Issues | $closed_issue_count |\n"
+          markdown_table+="| Opened PRs | $open_pr_count |\n"
+          markdown_table+="| Closed PRs | $closed_pr_count |\n"
+          markdown_table+="| Added Lines | $added_lines |\n"
+          markdown_table+="| Modified Lines | $modified_lines |\n"
+          markdown_table+="| Active Contributors | $active_contributors |\n"
+          markdown_table+="| Average Issue Resolve Time (seconds) | $avg_issue_resolve_time |\n"
+          markdown_table+="| Average PR Merge Time (seconds) | $avg_pr_merge_time |\n"
+
+          # 保存 Markdown 表格到文件
+          echo "$markdown_table" > $end_date.md
+
+          # 获取分支名称或使用默认值
+          branch_name=${{ env.BRANCH_NAME }} || "workflows/weekly-stats"
+
+          # 提交 Markdown 表格文件
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          if ! git rev-parse --verify "$branch_name" >/dev/null 2>&1; then
+            git checkout -b "$branch_name"
+          else
+            git checkout "$branch_name"
+          fi
+
+          git add $end_date.md
+          git commit -m "Weekly stats"
+          git push origin "$branch_name"
