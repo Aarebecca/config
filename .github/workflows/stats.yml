@@ -49,14 +49,6 @@ jobs:
           # 活跃贡献者数量
           active_contributors=$(git log --since="$start_date" --until="$end_date" --format='%ae' | sort -u | wc -l)
 
-          # 平均解决问题时间
-          avg_issue_resolve_time=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$owner/$repo/issues?state=closed&since=$start_date&until=$end_date&per_page=100" | jq '[.[] | (.closed_at - .created_at)] | add / length')
-
-          # 平均合并 PR 时间
-          avg_pr_merge_time=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/$owner/$repo/pulls?state=closed&since=$start_date&until=$end_date&per_page=100" | jq '[.[] | (.merged_at - .created_at)] | add / length')
-
           echo "Last week's stats:"
           echo "Commits: $commit_count"
           echo "Opened Issues: $open_issue_count"
@@ -66,5 +58,3 @@ jobs:
           echo "Added Lines: $added_lines"
           echo "Modified Lines: $modified_lines"
           echo "Active Contributors: $active_contributors"
-          echo "Average Issue Resolve Time: $avg_issue_resolve_time"
-          echo "Average PR Merge Time: $avg_pr_merge_time"
