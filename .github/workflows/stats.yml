@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
       - name: Set Up Node.js
         uses: actions/setup-node@v2
         with:
@@ -76,7 +77,7 @@ jobs:
           echo "$markdown_table" > $end_date.md
 
           # 获取分支名称或使用默认值
-          branch_name=${{ env.BRANCH_NAME }} || "workflows/weekly-stats"
+          branch_name="workflows/weekly-stats"
 
           # 提交 Markdown 表格文件
           git config --global user.name "GitHub Actions"
@@ -91,3 +92,5 @@ jobs:
           git add $end_date.md
           git commit -m "Weekly stats"
           git push origin "$branch_name"
+        env:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
